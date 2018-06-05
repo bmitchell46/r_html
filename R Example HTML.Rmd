@@ -1,0 +1,91 @@
+---
+title: "Interactive R Demonstration"
+author: "Brian Mitchell"
+date: "October 17, 2017"
+output: html_document
+---
+# LA Metro Monthly Rail Report
+<p>This is a simple script that demonstrates interactive report generation using R, markdown, and html. This script loads, cleans, and visualizes two ridership / revenue data sets. Data is summarized via an interactive table, in-line code, and an interactive map. The data used in this example was manually generated and does not represent actual LA Metro Rail data, however this example could be adapted to import data from additional sources including excel files, SQL databases, and web APIs. Further contextual information and data visualization can be added based on further requirements capture.</p>
+<br>
+
+```{r, message=FALSE}
+# Load the required libraries
+library(dplyr)
+library(magrittr)
+library(leaflet)
+library(rio)
+library(reshape2)
+library(devtools)
+library(zoo)
+library(scales)
+library(ggplot2)
+library(plotly)
+library(fpp)
+library(ggmap)
+library(DT)
+options(scipen=999)
+```
+<br>
+
+
+```{r}
+# Import the data and recode line and mode as factors. This will allow for interactive table creation.  
+metro_data <- import("LA Metro Data Oct 2017.xlsx")
+metro_data$Line <- as.factor(metro_data$Line) # Recode as factor 
+metro_data$Mode <- as.factor(metro_data$Mode)
+```
+<br>
+
+## Ridership and Revenue by Line
+```{r}
+# The text in the following two lines was generated from in-line cod and will update automatically when new data is inputed. 
+```
+### Total Rail Ridership: `r format(sum(metro_data$Ridership), big.mark = ",")`
+### Total Rail Revenue: `r paste("$",format(sum(metro_data$Revenue), big.mark=","),sep="")`
+```{r}
+datatable(metro_data, filter = 'top')%>%
+  formatCurrency('Revenue', '$')
+```
+<br>
+
+## LA Metro Ridership and Revenue Map by Station
+<br>
+
+```{r}
+# read in the stops data. This data was taken from LA Metro's gtfs data sets. The stops data set does not include station level ridership and revenue data. For simplicity this data was simulated as random numbers generated between two arbitratry limits. Actual ridership and revenue data could easily be integrated from external files or calculated with SQL queries.
+stops <- read.table("stops.txt", header = T, sep = ",")
+stops <- filter(stops, location_type == 0)
+stops$ridership <- floor(runif(length(stops$stop_code), min=20000, max=200000)) #simulating station level ridership
+stops$revenue <- runif(length(stops$stop_code), min=20000, max=300000) # simulating station level revenue
+shapes <- read.table("shapes.txt", header = T, sep = ",")
+shapes <- filter(shapes, grepl('EB', shape_id) | grepl('NB', shape_id)) # lines contain both north and south directions. Filter to only include one direction.
+# subset each line and order to prevent route bunching. 
+rt1 <- subset(shapes, shape_id == "801NB_120323")
+rt1 <- rt1[order(rt1$shape_pt_sequence),]
+rt2 <- subset(shapes, shape_id == "802EB_120213")
+rt2 <- rt2[order(rt2$shape_pt_sequence),]
+rt3 <- subset(shapes, shape_id == "803EB_120215")
+rt3 <- rt3[order(rt3$shape_pt_sequence),]
+rt4 <- subset(shapes, shape_id == "804NB_160306")
+rt4 <- rt4[order(rt4$shape_pt_sequence),]
+rt5 <- subset(shapes, shape_id == "805EB_120213")
+rt5 <- rt5[order(rt5$shape_pt_sequence),]
+rt6 <- subset(shapes, shape_id == "806NB_160306")
+rt6 <- rt6[order(rt6$shape_pt_sequence),]
+```
+
+```{r}
+# Generate the map with pop up information for each station. 
+leaflet(data = stops, width = "100%")%>%
+  addProviderTiles(providers$CartoDB.Positron)%>%
+  addMarkers(~stop_lon, ~stop_lat, popup = paste("Stop Name: ", stops$stop_name, "<br>",
+                                                 "Ridership: ", format(stops$ridership, big.mark = ","), "<br>",
+                                                 "Revenue: ", "$", format(stops$revenue, big.mark = ",")))%>%
+  addPolylines(data=rt1, lng = ~shape_pt_lon, lat = ~shape_pt_lat, color = "blue")%>%
+  addPolylines(data=rt2, lng = ~shape_pt_lon, lat = ~shape_pt_lat, color = "red")%>%
+  addPolylines(data=rt3, lng = ~shape_pt_lon, lat = ~shape_pt_lat, color = "green")%>%
+  addPolylines(data=rt4, lng = ~shape_pt_lon, lat = ~shape_pt_lat, color = "gold")%>%
+  addPolylines(data=rt5, lng = ~shape_pt_lon, lat = ~shape_pt_lat, color = "purple")%>%
+  addPolylines(data=rt6, lng = ~shape_pt_lon, lat = ~shape_pt_lat, color = "lightblue")
+```
+
