@@ -7,7 +7,7 @@ As an internal presentation, this report includes code blocks and comments, fina
 
 # Contents:
 * R Example HTML.Rmd: File containing R / markdown code
-* R_Example_HTML.html: File containing rendered report
+* R_Example_HTML.md: File containing rendered report
 * LA Metro Data Oct 2017.xlsx: Synthetic Ridership and Revenue Data
 * shapes.txt: GTFS text file containing rail route shapes
 * stops.txt: GTFS text file containing rail stop locations
